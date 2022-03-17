@@ -28,7 +28,11 @@ contract Stake {
     struct StakerDetails{
         address staker;
         uint amount;
+        uint stakedBal;
+        uint mainBal;
+        uint intrestBal;
         uint stakedTime;
+        uint timeLast;
     }
 
     // FUNCTION
@@ -50,9 +54,22 @@ contract Stake {
         s.staker = _staker;
         s.amount = _amount;
         bal += _amount;
+        s.stakedBal += _amount;
+        s.mainBal += _amount;
         s.stakedTime = block.timestamp;
+        s.timeLast += s.stakedTime;
 
         return true;
+    }
+
+    function calculateIntrestPerDay(address _staker, uint currentDay)private{
+        StakerDetails storage s = addrToStaker[_staker];
+        uint a = 0.3 * 1000;
+        uint b = s.stakedBal / 100;
+        uint intrestPerday = a * b / 1000;
+        uint currentIntrest = intrestPerday * currentDay;
+        s.intrestBal += intrestPerday;
+        s.mainBal += intrestPerday;
     }
 
     // function to withdraw
@@ -62,12 +79,12 @@ contract Stake {
         assert(addrToStaker[_staker].amount==_amount);
         if(s.stakedTime > block.timestamp + 3 days){
             bal -= _amount;
-            uint intrest = _amount/10 * 100;
-            uint main = _amount += intrest;
-            IERC20(address(this)).transfer(_staker,main);
+            uint intrest = _amount*10 / 100;
+            uint main = _amount + intrest;
+            IERC20(BAT).transfer(_staker,main);
         }else{
             bal -= _amount;
-            IERC20(address(this)).transfer(_staker,_amount);
+            IERC20(BAT).transfer(_staker,_amount);
         }
     }
 }
