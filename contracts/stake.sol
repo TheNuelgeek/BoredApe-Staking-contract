@@ -11,15 +11,15 @@ contract Stake {
 
     ** Write  a staking contract that accepts an erc20 token called boredApeToken(created by you,18 decimasls)
     ** When people stake brt, they earn 10% of it per month provided they have staked for 3 days or more
-    ** IMPORTANT: Only BoredApes owners can use your contract
+    ** IMPORTANT: Only BoredApes owners can use your contract (ignore = 0x0ed64d01D0B4B655E410EF1441dD677B695639E7)
 
     ** BOREDAPES NFT: 0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d
-    ** DEPLOYED ERC20 BAT ADDRESS: 0x0ed64d01D0B4B655E410EF1441dD677B695639E7
+    ** DEPLOYED ERC20 BAT ADDRESS: 0x7Fe50431F262aE27F4Cbe0084605B4Ad273C410A
     ** address boredApe = 0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d;
     **/
 
     address public boredContractApe = 0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D;
-    address public BAT = 0x0ed64d01D0B4B655E410EF1441dD677B695639E7;
+    address public BAT = 0x7Fe50431F262aE27F4Cbe0084605B4Ad273C410A;
     address[] stakers;
     mapping(address => bool)staker;
     mapping(address => StakerDetails) addrToStaker;
@@ -57,34 +57,48 @@ contract Stake {
         s.stakedBal += _amount;
         s.mainBal += _amount;
         s.stakedTime = block.timestamp;
-        s.timeLast += s.stakedTime;
+        s.timeLast = s.stakedTime;
 
         return true;
     }
 
-    function calculateIntrestPerDay(address _staker, uint currentDay)private{
+    function calculateIntrestPerDay(address _staker, uint currentDay)private view returns(uint intrest){
         StakerDetails storage s = addrToStaker[_staker];
-        uint a = 0.3 * 1000;
+        uint a = 0.333 * 1000;
         uint b = s.stakedBal / 100;
         uint intrestPerday = a * b / 1000;
         uint currentIntrest = intrestPerday * currentDay;
-        s.intrestBal += intrestPerday;
-        s.mainBal += intrestPerday;
+        return intrest = currentIntrest;
+        // s.intrestBal += intrestPerday;
+        // s.mainBal += intrestPerday;
     }
 
     // function to withdraw
-    function withdraw(address _staker, uint _amount)external addAddress returns(bool){
+    function withdraw(address _staker, uint _amount)external addAddress returns(bool success){
         assert(staker[_staker]);
-        StakerDetails memory s = addrToStaker[_staker];
-        assert(addrToStaker[_staker].amount==_amount);
+        StakerDetails storage s = addrToStaker[_staker];
+        assert(addrToStaker[_staker].amount<=_amount);
         if(s.stakedTime > block.timestamp + 3 days){
+            uint withdrawTime  = block.timestamp - s.stakedTime;
+            uint numOfDays = withdrawTime / 60*60*24;
+            uint intrest = calculateIntrestPerDay(msg.sender, numOfDays);
             bal -= _amount;
-            uint intrest = _amount*10 / 100;
+            // uint newIntrest = _amount*10 / 100;
             uint main = _amount + intrest;
+            s.mainBal -= main;
+            s.stakedBal -= main;
+            s.stakedTime = block.timestamp;
+            s.stakedTime = s.timeLast;
             IERC20(BAT).transfer(_staker,main);
         }else{
             bal -= _amount;
+            s.mainBal -= _amount;
+            s.stakedBal -= _amount;
+            s.stakedTime = block.timestamp;
+            s.stakedTime = s.timeLast;
             IERC20(BAT).transfer(_staker,_amount);
         }
+
+        success = true;
     }
 }
