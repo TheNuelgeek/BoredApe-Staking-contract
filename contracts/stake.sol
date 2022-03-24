@@ -23,8 +23,8 @@ contract Stake {
     address[] stakers;
     mapping(address => bool)staker;
     mapping(address => StakerDetails) addrToStaker;
-    uint bal;
-    
+    uint contractBal;
+
     struct StakerDetails{
         address staker;
         uint amount;
@@ -39,7 +39,7 @@ contract Stake {
 
     modifier addAddress(){
         //address _boredApeAddr = msg.sender;
-        require( IERC721(boredContractApe).balanceOf(msg.sender) >= 1 , ""); 
+        require( IERC721(boredContractApe).balanceOf(msg.sender) >= 1 , "");
 
         staker[msg.sender] = true;
 
@@ -53,7 +53,7 @@ contract Stake {
         StakerDetails storage s = addrToStaker[_staker];
         s.staker = _staker;
         s.amount = _amount;
-        bal += _amount;
+        contractBal += _amount;
         s.stakedBal += _amount;
         s.mainBal += _amount;
         s.stakedTime = block.timestamp;
@@ -62,36 +62,38 @@ contract Stake {
         return true;
     }
 
-    function calculateIntrestPerDay(address _staker, uint currentDay)private view returns(uint intrest){
-        StakerDetails storage s = addrToStaker[_staker];
-        uint a = 50; //0.333 * 1000;
-        uint b = s.stakedBal / 100;
-        uint intrestPerday = a * b ;// / 1000;
-        uint currentIntrest = intrestPerday * currentDay;
-        return intrest = currentIntrest;
-        // s.intrestBal += intrestPerday;
-        // s.mainBal += intrestPerday;
+    function calculateIntrestPerDay(uint currentDay, uint amount)private pure returns(uint intrest){
+        //uint a = 50; //0.333 * 1000;
+        uint intrestPerAmount = (50 * amount) / 100;
+        // / 1000;
+        uint currentIntrest = intrestPerAmount * currentDay;
+        intrest = currentIntrest;
+        return intrest;
+       
     }
 
     // function to withdraw
     function withdraw(address _staker, uint _amount)external returns(bool success){
-        assert(staker[_staker]);
+        //assert(staker[_staker]);
         StakerDetails storage s = addrToStaker[_staker];
         assert(addrToStaker[_staker].amount >= _amount);
-        if(s.stakedTime > block.timestamp + 60 seconds ){
+        if(( block.timestamp - s.stakedTime) > 60 seconds  ){
             uint withdrawTime  = block.timestamp - s.stakedTime;
             uint numOfDays = withdrawTime / 60;
-            uint intrest = calculateIntrestPerDay(msg.sender, numOfDays);
-            // uint newIntrest = _amount*10 / 100;
-            uint main = _amount + intrest;
-            bal -= main;
-            s.mainBal -= main;
-            s.stakedBal -= main;
+            uint interest = calculateIntrestPerDay(numOfDays, s.mainBal);
+        
+            contractBal -= _amount;
+            s.mainBal -= _amount;
+            s.stakedBal -= _amount;
+            contractBal += interest;
+            s.mainBal += interest;
+            s.stakedBal = s.mainBal;
+
             s.stakedTime = block.timestamp;
             s.stakedTime = s.timeLast;
-            IERC20(BAT).transfer(_staker,main);
+            IERC20(BAT).transfer(_staker,_amount);
         }else{
-            bal -= _amount;
+            contractBal -= _amount;
             s.mainBal -= _amount;
             s.stakedBal -= _amount;
             s.stakedTime = block.timestamp;
@@ -101,4 +103,9 @@ contract Stake {
 
         success = true;
     }
+
+    function seeStakeDetails()external view returns(StakerDetails  memory s){
+         s = addrToStaker[msg.sender];
+    }
+
 }

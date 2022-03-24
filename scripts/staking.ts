@@ -7,6 +7,7 @@ const stakeAddr = "0x4bf010f1b9beDA5450a8dD702ED602A104ff65EE";
 
 async function staking(){
     const stakeContract = await ethers.getContractAt("Stake", stakeAddr);
+    //const stakeContract = await ethers.getContractFactory("Stake");
     const tokenContract = await ethers.getContractAt("IERC20", batToken)
 
     // const stakeDeploy = await stakeContract.deploy();
@@ -18,7 +19,7 @@ async function staking(){
     // @ts-ignore
     await hre.network.provider.request({
         method: "hardhat_impersonateAccount",
-         params: [boredApeHolder],
+        params: [boredApeHolder],
     });
 
     const batBal = await tokenContract.balanceOf(boredApeHolder)
@@ -36,15 +37,18 @@ async function staking(){
     const batBal3 = await tokenContract.balanceOf(boredApeHolder)
     console.log(`Bat Token Balance of BoredApe Holder:${batBal3}`)
 
+    console.log(`Staker details before:${await stakeContract.connect(signer).seeStakeDetails()}`)
   
 
    // await ethers.provider.send("evm_increaseTime", [2592000])
    // await network.provider.send("evm_mine", [1650667236])
 
-    const withdraw = await stakeContract.connect(signer).withdraw(boredApeHolder, 100)
+    const withdraw = await stakeContract.connect(signer).withdraw(boredApeHolder, 50)
 
     const batBal4 = await tokenContract.balanceOf(boredApeHolder)
     console.log(`Latest Bat Token Balance of BoredApe Holder:${batBal4}`)
+
+    console.log(`Staker details after:${await stakeContract.connect(signer).seeStakeDetails()}`)
 }
 
 staking().catch((error) => {

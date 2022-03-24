@@ -26,6 +26,7 @@ async function erc20(){
     const ownerSigner = await ethers.getSigner(owner)
 
     const ERC20 = await ethers.getContractAt("ERC20Token", batToken);
+    // const ERC20 = await ethers.getContractFactory("ERC20Token");
     // const ERC20Depoly = await ERC20.connect(ownerSigner).deploy(name, symbol, dec, totalsupply);
     // await ERC20Depoly.deployed();
 
