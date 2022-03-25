@@ -33,7 +33,7 @@ async function staking(){
     const allowance = await tokenContract.allowance(boredApeHolder, stakeContract.address)
     console.log(`amount allowed ${allowance}`)
     
-    const stake  = await stakeContract.connect(signer).stake(boredApeHolder, 200);
+    const stake  = await stakeContract.connect(signer).stake(boredApeHolder, 100);
     const batBal3 = await tokenContract.balanceOf(boredApeHolder)
     console.log(`Bat Token Balance of BoredApe Holder:${batBal3}`)
 
