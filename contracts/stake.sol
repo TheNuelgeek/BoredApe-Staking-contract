@@ -63,8 +63,8 @@ contract Stake {
     }
 
     function calculateIntrestPerDay(uint currentDay, uint amount)private pure returns(uint intrest){
-        //uint a = 50; //0.333 * 1000;
-        uint intrestPerAmount = (50 * amount) / 100;
+        uint a = 0.333 * 1000; //50;
+        uint intrestPerAmount = ((a * amount) / 100) / 1000;
         // / 1000;
         uint currentIntrest = intrestPerAmount * currentDay;
         intrest = currentIntrest;
@@ -77,18 +77,19 @@ contract Stake {
         //assert(staker[_staker]);
         StakerDetails storage s = addrToStaker[_staker];
         assert(addrToStaker[_staker].amount >= _amount);
-        if(( block.timestamp - s.stakedTime) > 60 seconds  ){
+        if(( block.timestamp - s.stakedTime) >= 3 days  ){
             uint withdrawTime  = block.timestamp - s.stakedTime;
-            uint numOfDays = withdrawTime / 60;
+            uint numOfDays = withdrawTime / 86400;
             uint interest = calculateIntrestPerDay(numOfDays, s.mainBal);
-        
+
+            contractBal += interest;
+            s.mainBal += interest;
             contractBal -= _amount;
             s.mainBal -= _amount;
             s.stakedBal -= _amount;
-            contractBal += interest;
-            s.mainBal += interest;
             s.stakedBal = s.mainBal;
 
+            // Auto compounding always happens here immedaitely stakedTime is reset to block.timestamp
             s.stakedTime = block.timestamp;
             s.stakedTime = s.timeLast;
             IERC20(BAT).transfer(_staker,_amount);

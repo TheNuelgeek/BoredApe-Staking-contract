@@ -6,7 +6,7 @@ const dec:number = 18;
 const totalsupply = "10000000000000000000000000000000000000000000000";
 const owner ="0xC635dC7e540d384876aC4D6178D9971241b8383B"
 const batToken = "0x6493AF7EF4bb3E3c6E4039095DD5fA75B40e2F85"
-const boredApeHolder = "0xAcE9388E96555c7DaB7CF70D5dBC359ba54A8270"
+const boredApeHolder = "0x8BBc693D042cEA740e4ff01D7E0Efb36110c36BF"
 
 async function erc20(){
  
