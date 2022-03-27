@@ -18,8 +18,8 @@ contract Stake {
     ** address boredApe = 0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d;
     **/
 
-    address public boredContractApe = 0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D;
-    address public BAT = 0x6493AF7EF4bb3E3c6E4039095DD5fA75B40e2F85;
+    address constant boredContractApe = 0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D;
+    address constant BAT = 0x6493AF7EF4bb3E3c6E4039095DD5fA75B40e2F85;
     address[] stakers;
     mapping(address => bool)staker;
     mapping(address => StakerDetails) addrToStaker;
@@ -28,18 +28,15 @@ contract Stake {
     struct StakerDetails{
         address staker;
         uint amount;
-        uint stakedBal;
         uint mainBal;
-        uint intrestBal;
-        uint stakedTime;
-        uint timeLast;
+        uint96 stakedTime;
     }
 
     // FUNCTION
 
     modifier addAddress(){
         //address _boredApeAddr = msg.sender;
-        require( IERC721(boredContractApe).balanceOf(msg.sender) >= 1 , "");
+        assert( IERC721(boredContractApe).balanceOf(msg.sender) >= 1);
 
         staker[msg.sender] = true;
 
@@ -54,22 +51,17 @@ contract Stake {
         s.staker = _staker;
         s.amount = _amount;
         contractBal += _amount;
-        s.stakedBal += _amount;
         s.mainBal += _amount;
-        s.stakedTime = block.timestamp;
-        s.timeLast = s.stakedTime;
+        s.stakedTime = uint96(block.timestamp);
 
         return true;
     }
 
-    function calculateIntrestPerDay(uint currentDay, uint amount)private pure returns(uint intrest){
-        uint a = 0.333 * 1000; //50;
-        uint intrestPerAmount = ((a * amount) / 100) / 1000;
-        // / 1000;
-        uint currentIntrest = intrestPerAmount * currentDay;
-        intrest = currentIntrest;
-        return intrest;
-       
+    function calculateIntrestPerDay(uint96 currentDay, uint amount)private pure returns(uint intrest){
+        uint intrestDay = (currentDay / 25920000);
+        uint currentIntrest = intrestDay * amount;
+        intrest = currentIntrest ;
+        return intrest; 
     }
 
     // function to withdraw
@@ -78,27 +70,21 @@ contract Stake {
         StakerDetails storage s = addrToStaker[_staker];
         assert(addrToStaker[_staker].amount >= _amount);
         if(( block.timestamp - s.stakedTime) >= 3 days  ){
-            uint withdrawTime  = block.timestamp - s.stakedTime;
-            uint numOfDays = withdrawTime / 86400;
-            uint interest = calculateIntrestPerDay(numOfDays, s.mainBal);
+            uint96 numOfDaysInSecs  = uint96(block.timestamp) - s.stakedTime;
+            (uint interest) = calculateIntrestPerDay(numOfDaysInSecs, s.mainBal);
 
             contractBal += interest;
             s.mainBal += interest;
             contractBal -= _amount;
             s.mainBal -= _amount;
-            s.stakedBal -= _amount;
-            s.stakedBal = s.mainBal;
 
             // Auto compounding always happens here immedaitely stakedTime is reset to block.timestamp
-            s.stakedTime = block.timestamp;
-            s.stakedTime = s.timeLast;
+            s.stakedTime = uint96(block.timestamp);
             IERC20(BAT).transfer(_staker,_amount);
         }else{
             contractBal -= _amount;
             s.mainBal -= _amount;
-            s.stakedBal -= _amount;
-            s.stakedTime = block.timestamp;
-            s.stakedTime = s.timeLast;
+            s.stakedTime = uint96(block.timestamp);
             IERC20(BAT).transfer(_staker,_amount);
         }
 
