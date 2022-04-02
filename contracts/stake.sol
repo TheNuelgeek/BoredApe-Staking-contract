@@ -38,7 +38,7 @@ contract Stake {
         //address _boredApeAddr = msg.sender;
         assert( IERC721(boredContractApe).balanceOf(msg.sender) >= 1);
 
-        staker[msg.sender] = true;
+        staker[msg.sender] = true;//true:false;
 
         _;
     }
@@ -48,18 +48,32 @@ contract Stake {
         assert(staker[_staker]);
         IERC20(BAT).transferFrom(_staker, address(this), _amount);
         StakerDetails storage s = addrToStaker[_staker];
-        s.staker = _staker;
-        s.amount = _amount;
-        contractBal += _amount;
-        s.mainBal += _amount;
-        s.stakedTime = uint96(block.timestamp);
+        
+        if(s.mainBal > 0 ){
+            uint96 numOfDaysInSecs  = uint96(block.timestamp) - s.stakedTime;
+            uint interest = calculateIntrestPerDay(numOfDaysInSecs, s.mainBal);
+            s.mainBal += (interest / 100000000000000000000000);
+            //contractBal += _amount;
+            s.amount += _amount;
+            s.mainBal += _amount;
+            s.stakedTime = uint96(block.timestamp);
+        }
 
+        if(s.mainBal <= 0){
+            s.staker = _staker;
+            s.amount = _amount;
+            s.mainBal += _amount;
+            s.stakedTime = uint96(block.timestamp);
+        }
+
+        
+        
+        
         return true;
     }
 
     function calculateIntrestPerDay(uint96 currentDay, uint amount)private pure returns(uint intrest){
-         //((((0.1 / 30)/864000) * currentDay) * amount)*10000000000000; 25920000
-        uint c = 0.00333333333 * 10000000000000000;
+       uint c = 0.00333333333 * 10000000000000000;
         uint d = c/86400;
         uint intrestDay = (currentDay * d );
         uint currentIntrest = intrestDay * amount;
@@ -69,18 +83,16 @@ contract Stake {
 
     // function to withdraw
     function withdraw(address _staker, uint _amount)external returns(bool success, string memory message){
-        //assert(staker[_staker]);
         StakerDetails storage s = addrToStaker[_staker];
         assert(s.mainBal >= _amount);
         uint96 numOfDaysInSecs  = uint96(block.timestamp) - s.stakedTime;
         if(numOfDaysInSecs >= 3 days  ){
-           //uint96 numOfDaysInSecs  = uint96(block.timestamp) - s.stakedTime;
             uint interest = calculateIntrestPerDay(numOfDaysInSecs, s.mainBal);
 
             contractBal -= _amount;
             s.mainBal -= _amount;
-            contractBal += (interest / 10000000000000000);
-            s.mainBal += (interest / 10000000000000000);
+            s.mainBal += (interest / 100000000000000000000000);
+            contractBal += (interest / 100000000000000000000000);
 
             // Auto compounding always happens here immedaitely stakedTime is reset to block.timestamp
             s.stakedTime = uint96(block.timestamp);
